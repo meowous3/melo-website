@@ -1,21 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { MeloIcon, GitHubIcon } from "./icons";
 import { useScrollRevealStyle } from "../ScrollRevealContext";
-import { animationStyles } from "../useScrollReveal";
+// import { animationStyles } from "../useScrollReveal";
 
 const GITHUB_URL = "https://github.com/meowous3/melo";
 
 const links = [
+  { label: "Home", href: "#" },
   { label: "Features", href: "#features" },
-  { label: "Demo", href: "#demo" },
-  { label: "Themes", href: "#themes" },
   { label: "Download", href: "#download" },
+  { label: "Demo", href: "#demo" },
 ];
 
-export function Nav() {
+export function Nav({ demoActive }: { demoActive?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { enterStyle, leaveStyle, setEnterStyle, setLeaveStyle } = useScrollRevealStyle();
+  // const { enterStyle, leaveStyle, setEnterStyle, setLeaveStyle } = useScrollRevealStyle();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -26,10 +26,15 @@ export function Nav() {
   const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     setMenuOpen(false);
+    if (href === "#") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const el = document.querySelector(href);
     if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top, behavior: "smooth" });
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.scrollY - (window.innerHeight - rect.height) / 2;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     }
   }, []);
 
@@ -46,12 +51,17 @@ export function Nav() {
 
         <div className={`nav__links ${menuOpen ? "nav__links--open" : ""}`}>
           {links.map((l) => (
-            <a key={l.href} href={l.href} onClick={(e) => smoothScroll(e, l.href)}>
+            <a
+              key={l.href}
+              href={l.href}
+              className={l.href === "#demo" && demoActive ? "nav__link--hidden" : undefined}
+              onClick={(e) => smoothScroll(e, l.href)}
+            >
               {l.label}
             </a>
           ))}
 
-          <div className="nav__anim-selectors">
+          {/* <div className="nav__anim-selectors">
             <select
               className="nav__anim-select"
               value={enterStyle}
@@ -72,7 +82,7 @@ export function Nav() {
                 <option key={s.id} value={s.id}>Leave: {s.label}</option>
               ))}
             </select>
-          </div>
+          </div> */}
 
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="nav__github">
             <GitHubIcon />

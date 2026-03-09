@@ -3,9 +3,9 @@ import type { SearchResult, StreamResult, ApiResponse } from "./types";
 const CORS_PROXY = "https://corsproxy.io/?url=";
 
 const INSTANCES = [
+  "https://api.piped.private.coffee",
   "https://pipedapi.kavin.rocks",
   "https://pipedapi.adminforge.de",
-  "https://pipedapi.r4fo.com",
 ];
 
 let apiBase = INSTANCES[0];

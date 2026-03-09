@@ -1,7 +1,7 @@
-// Copied from musetop QueuePanel.tsx — nearly 1:1
 import { useRef, useState } from "react";
-import { Icon } from "./DemoIcon";
-import type { SearchResult } from "../api/types";
+import { Icon } from "../icons";
+
+const isAlbumArtUrl = (url: string) => url.includes("albumart/") || url.includes("coverartarchive.org") || url.includes("cover_xl");
 
 function formatDuration(seconds: number): string {
   if (!seconds) return "";
@@ -23,7 +23,10 @@ export default function QueuePanel({
   onPlaySuggestion,
   onJumpQueue,
   onReorderQueue,
+  onTrackContextMenu,
+  onQueueItemContextMenu,
   hasQueue,
+  onSaveQueue,
   onClearQueue,
   onShuffleQueue,
 }: {
@@ -37,7 +40,10 @@ export default function QueuePanel({
   onPlaySuggestion: (index: number) => void;
   onJumpQueue: (index: number) => void;
   onReorderQueue: (fromIndex: number, toIndex: number) => void;
+  onTrackContextMenu: (track: SearchResult, e: React.MouseEvent) => void;
+  onQueueItemContextMenu: (track: SearchResult, index: number, e: React.MouseEvent) => void;
   hasQueue: boolean;
+  onSaveQueue?: (e: React.MouseEvent) => void;
   onClearQueue?: () => void;
   onShuffleQueue?: () => void;
 }) {
@@ -54,6 +60,7 @@ export default function QueuePanel({
   const handleDragStart = (e: React.DragEvent, index: number) => {
     dragIndexRef.current = index;
     e.dataTransfer.effectAllowed = "move";
+    // Make the drag image slightly transparent
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.classList.add("dragging");
     }
@@ -66,6 +73,7 @@ export default function QueuePanel({
     if (dragIndexRef.current !== null && dragOverIndex !== null) {
       let toIndex = dragOverIndex;
       if (dragOverHalf === "bottom") toIndex++;
+      // Adjust if dragging downward past the original position
       if (toIndex > dragIndexRef.current) toIndex--;
       if (toIndex !== dragIndexRef.current) {
         onReorderQueue(dragIndexRef.current, toIndex);
@@ -88,6 +96,7 @@ export default function QueuePanel({
     setDragOverIndex(null);
   };
 
+  // When queue is empty, always show suggestions (no queue tab to switch to)
   const effectiveMode = hasQueue ? mode : "suggestions";
 
   return (
@@ -117,8 +126,9 @@ export default function QueuePanel({
               <div
                 className="queue-item autoplay"
                 onClick={onPlayAutoplay}
+                onContextMenu={(e) => onTrackContextMenu(autoplay, e)}
               >
-                <img className="queue-item-thumb" src={autoplay.thumbnail} alt="" loading="lazy" />
+                <img className={`queue-item-thumb${isAlbumArtUrl(autoplay.thumbnail) ? " album-art" : ""}`} src={autoplay.thumbnail} alt="" loading="lazy" />
                 <div className="queue-item-info">
                   <span className="queue-item-title">{autoplay.title || "Loading..."}</span>
                   <span className="queue-item-meta">{autoplay.channel}</span>
@@ -131,6 +141,7 @@ export default function QueuePanel({
             <>
               {!hasQueue && <div className="queue-section-label">Suggestions</div>}
               {allSuggestions.map((track, i) => {
+                // When queue is active, first item is the merged autoplay
                 const isAutoplay = hasQueue && i === 0 && autoplay;
                 const onClick = isAutoplay
                   ? onPlayAutoplay
@@ -141,8 +152,9 @@ export default function QueuePanel({
                     key={`${track.id}-${i}`}
                     className="queue-item"
                     onClick={onClick}
+                    onContextMenu={(e) => onTrackContextMenu(track, e)}
                   >
-                    <img className="queue-item-thumb" src={track.thumbnail} alt="" loading="lazy" />
+                    <img className={`queue-item-thumb${isAlbumArtUrl(track.thumbnail) ? " album-art" : ""}`} src={track.thumbnail} alt="" loading="lazy" />
                     <div className="queue-item-info">
                       <span className="queue-item-title">{track.title || "Loading..."}</span>
                       <span className="queue-item-meta">
@@ -166,6 +178,11 @@ export default function QueuePanel({
         <div className="queue-list-wrap">
           <div className="queue-header">
             <span className="queue-count">{queueIndex + 1} / {queue.length}</span>
+            {onSaveQueue && queue.length > 0 && (
+              <button className="queue-save-btn" onClick={onSaveQueue} title="Save queue as playlist">
+                <Icon name="save" size={14} />
+              </button>
+            )}
             {onShuffleQueue && queue.length - queueIndex > 2 && (
               <button className="queue-save-btn" onClick={onShuffleQueue} title="Shuffle upcoming tracks">
                 <Icon name="shuffle" size={14} />
@@ -187,6 +204,7 @@ export default function QueuePanel({
                 key={`${track.id}-${i}`}
                 className={`queue-item${i === queueIndex ? " active" : ""}${i < queueIndex ? " played" : ""}${dragClass}`}
                 onClick={() => onJumpQueue(i)}
+                onContextMenu={(e) => onQueueItemContextMenu(track, i, e)}
                 draggable
                 onDragStart={(e) => handleDragStart(e, i)}
                 onDragEnd={handleDragEnd}
@@ -195,7 +213,7 @@ export default function QueuePanel({
               >
                 <span className="queue-item-index">{i + 1}</span>
                 {track.thumbnail && (
-                  <img className="queue-item-thumb" src={track.thumbnail} alt="" loading="lazy" />
+                  <img className={`queue-item-thumb${isAlbumArtUrl(track.thumbnail) ? " album-art" : ""}`} src={track.thumbnail} alt="" loading="lazy" />
                 )}
                 <div className="queue-item-info">
                   <span className="queue-item-title">{track.title}</span>

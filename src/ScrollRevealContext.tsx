@@ -16,8 +16,8 @@ const Ctx = createContext<ScrollRevealContextValue>({
 });
 
 export function ScrollRevealProvider({ children }: { children: React.ReactNode }) {
-  const [enterStyle, setEnterStyle] = useState<AnimationStyle>("fade-up");
-  const [leaveStyle, setLeaveStyle] = useState<AnimationStyle>("fade");
+  const [enterStyle, setEnterStyle] = useState<AnimationStyle>("drop");
+  const [leaveStyle, setLeaveStyle] = useState<AnimationStyle>("drop");
   return (
     <Ctx.Provider value={{ enterStyle, leaveStyle, setEnterStyle, setLeaveStyle }}>
       {children}

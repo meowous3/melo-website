@@ -99,7 +99,7 @@ export function Features() {
           <p className="section-subtitle">A real music player, not a wrapper around a website.</p>
         </ScrollReveal>
         <div className="features__grid">
-          {features.map((f, i) => (
+          {features.map((f) => (
             <ScrollReveal key={f.title}>
               <div className="feature-card glass">
                 <FeatureIcon icon={f.icon} />

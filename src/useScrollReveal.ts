@@ -91,42 +91,57 @@ function ease(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+// ─── Scroll reveal config ───
+// All values are fractions of viewport height (0 = top of viewport, 1 = bottom)
+// "edge" is which edge of the element to track against the viewport line
+
+const ENTER = {
+  edge: 0.6,     // 0 = top of element, 1 = bottom of element
+  begin: 1,  // viewport line where animation starts (hidden → transitioning)
+  end: 0.8,    // viewport line where animation ends (transitioning → fully visible)
+};
+
+const LEAVE = {
+  edge: 0.2,     // 0 = top of element, 1 = bottom of element
+  begin: 0.2,  // viewport line where animation starts (visible → transitioning)
+  end: 0.1,    // viewport line where animation ends (transitioning → fully hidden)
+};
+
 function computeTarget(
   rect: DOMRect,
   vh: number,
   enterHidden: AnimNums,
   leaveHidden: AnimNums,
 ): AnimNums {
-  // ENTER: track the element's BOTTOM edge entering the viewport
-  // Starts when bottom reaches the viewport bottom, done at 50% of vh
-  const enterStart = vh;       // bottom edge just enters viewport
-  const enterEnd = vh * 0.70;  // bottom edge reaches 70% of viewport
+  const enterEdge = rect.top + rect.height * ENTER.edge;
+  const enterBegin = vh * ENTER.begin;
+  const enterEnd = vh * ENTER.end;
 
-  if (rect.bottom > enterStart) {
-    return enterHidden;
-  }
-  if (rect.bottom > enterEnd) {
-    const t = ease(1 - (rect.bottom - enterEnd) / (enterStart - enterEnd));
+  // Element is fully hidden (beyond the begin line)
+  if (enterEdge >= enterBegin) return enterHidden;
+  // Element is transitioning in
+  if (enterEdge > enterEnd) {
+    const t = ease(1 - (enterEdge - enterEnd) / (enterBegin - enterEnd));
     return lerpAnim(enterHidden, VIS, t);
   }
 
-  // EXIT: track the element's TOP edge leaving the viewport
-  // Starts when top reaches 30% of vh, fully hidden when top leaves viewport
-  const leaveStart = vh * 0.30;
+  const leaveEdge = rect.top + rect.height * LEAVE.edge;
+  const leaveBegin = vh * LEAVE.begin;
+  const leaveEnd = vh * LEAVE.end;
 
-  if (rect.top >= leaveStart) {
-    return VIS;
-  }
-
-  if (rect.top > 0) {
-    const t = ease(rect.top / leaveStart);
+  // Element is fully visible (above the leave begin line)
+  if (leaveEdge >= leaveBegin) return VIS;
+  // Element is transitioning out
+  if (leaveEdge > leaveEnd) {
+    const t = ease((leaveEdge - leaveEnd) / (leaveBegin - leaveEnd));
     return lerpAnim(leaveHidden, VIS, t);
   }
 
+  // Element is fully hidden (beyond the leave end line)
   return leaveHidden;
 }
 
-const LERP_FACTOR = 0.18; // Smoothing: 0 = frozen, 1 = instant. 0.15-0.2 is sweet spot
+const LERP_FACTOR = 0.45; // Smoothing: 0 = frozen, 1 = instant
 const THRESHOLD = 0.001;
 
 // Manages all scroll-reveal elements from a single scroll listener + RAF loop
@@ -136,6 +151,7 @@ class ScrollRevealManager {
     leaveStyle: AnimationStyle;
     current: AnimNums;
     target: AnimNums;
+    debugMarkers?: { enter: HTMLElement; leave: HTMLElement };
   }>();
   private raf: number | null = null;
   private running = false;
@@ -148,13 +164,21 @@ class ScrollRevealManager {
   }
 
   register(el: HTMLElement, enterStyle: AnimationStyle, leaveStyle: AnimationStyle) {
-    const target = this.computeForEl(el, enterStyle, leaveStyle);
-    this.entries.set(el, {
+    const target = this.computeForEl(el, null, enterStyle, leaveStyle);
+    const entry: (typeof this.entries extends Map<any, infer V> ? V : never) = {
       enterStyle,
       leaveStyle,
       current: { ...target },
       target,
-    });
+    };
+    if (DEBUG_GUIDES) {
+      el.style.position = el.style.position || "relative";
+      entry.debugMarkers = {
+        enter: this.createEdgeMarker(el, "enter", "#ff4444"),
+        leave: this.createEdgeMarker(el, "leave", "#4488ff"),
+      };
+    }
+    this.entries.set(el, entry);
     el.style.willChange = "opacity, transform, filter";
     applyToEl(el, target);
   }
@@ -169,6 +193,11 @@ class ScrollRevealManager {
   }
 
   unregister(el: HTMLElement) {
+    const entry = this.entries.get(el);
+    if (entry?.debugMarkers) {
+      entry.debugMarkers.enter.remove();
+      entry.debugMarkers.leave.remove();
+    }
     this.entries.delete(el);
     el.style.willChange = "";
     el.style.opacity = "";
@@ -176,15 +205,50 @@ class ScrollRevealManager {
     el.style.filter = "";
   }
 
-  private computeForEl(el: HTMLElement, enterStyle: AnimationStyle, leaveStyle: AnimationStyle): AnimNums {
+  private createEdgeMarker(el: HTMLElement, type: "enter" | "leave", color: string): HTMLElement {
+    const marker = document.createElement("div");
+    const edgeFrac = type === "enter" ? ENTER.edge : LEAVE.edge;
+    marker.style.cssText = `
+      position: absolute; left: 0; right: 0; height: 0;
+      border-top: 2px solid ${color};
+      top: ${edgeFrac * 100}%;
+      z-index: 99999; pointer-events: none;
+    `;
+    const tag = document.createElement("span");
+    tag.textContent = `${type} edge (${(edgeFrac * 100).toFixed(0)}%)`;
+    tag.style.cssText = `
+      position: absolute; top: 2px; right: 4px;
+      font: 10px/1 monospace; color: ${color};
+      background: rgba(0,0,0,0.8); padding: 2px 4px; border-radius: 2px;
+    `;
+    marker.appendChild(tag);
+    el.appendChild(marker);
+    return marker;
+  }
+
+  private computeForEl(el: HTMLElement, entry: { current: AnimNums } | null, enterStyle: AnimationStyle, leaveStyle: AnimationStyle): AnimNums {
     const rect = el.getBoundingClientRect();
-    return computeTarget(rect, window.innerHeight, getEnterHidden(enterStyle), getLeaveHidden(leaveStyle));
+    // Undo the current animation transform so we get the true layout position
+    const cur = entry?.current;
+    let corrected: DOMRect | { top: number; bottom: number; height: number } = rect;
+    if (cur) {
+      // Undo translateY and scale to recover true layout position
+      const s = cur.scale || 1;
+      const layoutHeight = rect.height / s;
+      const scaleShift = (layoutHeight - rect.height) / 2;
+      corrected = {
+        top: rect.top - cur.ty + scaleShift,
+        bottom: rect.bottom - cur.ty - scaleShift,
+        height: layoutHeight,
+      };
+    }
+    return computeTarget(corrected as DOMRect, window.innerHeight, getEnterHidden(enterStyle), getLeaveHidden(leaveStyle));
   }
 
   private onScroll() {
     // Update all targets
     for (const [el, entry] of this.entries) {
-      entry.target = this.computeForEl(el, entry.enterStyle, entry.leaveStyle);
+      entry.target = this.computeForEl(el, entry, entry.enterStyle, entry.leaveStyle);
     }
     this.startTick();
   }
@@ -232,10 +296,46 @@ class ScrollRevealManager {
   }
 }
 
+// ─── Debug guide lines ───
+const DEBUG_GUIDES = false;
+
+function createGuide(label: string, color: string, vh: number, fraction: number): HTMLElement {
+  const el = document.createElement("div");
+  el.style.cssText = `
+    position: fixed; left: 0; right: 0; height: 0;
+    border-top: 2px dashed ${color};
+    top: ${fraction * 100}vh;
+    z-index: 99999; pointer-events: none;
+  `;
+  const tag = document.createElement("span");
+  tag.textContent = `${label} (${(fraction * 100).toFixed(0)}%)`;
+  tag.style.cssText = `
+    position: absolute; top: 2px; left: 8px;
+    font: 11px/1 monospace; color: ${color};
+    background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 3px;
+  `;
+  el.appendChild(tag);
+  document.body.appendChild(el);
+  return el;
+}
+
+let guidesCreated = false;
+function ensureGuides() {
+  if (guidesCreated || !DEBUG_GUIDES) return;
+  guidesCreated = true;
+  createGuide("ENTER begin", "#ff4444", window.innerHeight, ENTER.begin);
+  createGuide("ENTER end", "#ff8888", window.innerHeight, ENTER.end);
+  createGuide("LEAVE begin", "#4488ff", window.innerHeight, LEAVE.begin);
+  createGuide("LEAVE end", "#88bbff", window.innerHeight, LEAVE.end);
+}
+
 // Singleton manager — one scroll listener for all elements
 let manager: ScrollRevealManager | null = null;
 
 export function getManager() {
-  if (!manager) manager = new ScrollRevealManager();
+  if (!manager) {
+    manager = new ScrollRevealManager();
+    ensureGuides();
+  }
   return manager;
 }

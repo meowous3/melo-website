@@ -56,7 +56,7 @@ export function DownloadSection() {
         </ScrollReveal>
 
         <div className="download__grid">
-          {platforms.map((p, i) => (
+          {platforms.map((p) => (
             <ScrollReveal key={p.name}>
               <a
                 href={`${RELEASES_URL}/latest`}

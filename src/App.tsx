@@ -1,28 +1,51 @@
-import { useThemeCycler } from "./useThemeCycler";
+import { useState, useEffect } from "react";
+import { darkThemes, lightThemes, applyTheme } from "./themes";
+import type { LandingTheme } from "./themes";
 import { ScrollRevealProvider } from "./ScrollRevealContext";
 import { BackgroundCanvas } from "./BackgroundCanvas";
 import { Nav } from "./components/Nav";
 import { Hero } from "./components/Hero";
 import { Features } from "./components/Features";
-import { DemoSection } from "./demo/DemoSection";
-import { ThemeShowcase } from "./components/ThemeShowcase";
+import DemoSection from "./demo/DemoSection";
 import { DownloadSection } from "./components/DownloadSection";
 import { Footer } from "./components/Footer";
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [query]);
+  return matches;
+}
+
 export function App() {
-  const cycler = useThemeCycler();
+  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
+  const [theme, setTheme] = useState<LandingTheme>(() =>
+    prefersDark ? darkThemes[0] : lightThemes[0]
+  );
+  const [demoActive, setDemoActive] = useState(false);
+
+  useEffect(() => {
+    setTheme(prefersDark ? darkThemes[0] : lightThemes[0]);
+  }, [prefersDark]);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   return (
     <ScrollRevealProvider>
-      <BackgroundCanvas accent={cycler.theme.palette.accent} />
+      <BackgroundCanvas accent={theme.palette.accent} />
       <div className="app-root">
-        <Nav />
+        <Nav demoActive={demoActive} />
         <main>
           <Hero />
           <Features />
-          <DemoSection currentTheme={cycler.theme} onThemeChange={(t) => cycler.jumpTo(t)} />
-          <ThemeShowcase cycler={cycler} />
           <DownloadSection />
+          <DemoSection currentTheme={theme} onThemeChange={setTheme} onActivate={() => setDemoActive(true)} onClose={() => setDemoActive(false)} />
         </main>
         <Footer />
       </div>
