@@ -299,7 +299,7 @@ class ScrollRevealManager {
 // ─── Debug guide lines ───
 const DEBUG_GUIDES = false;
 
-function createGuide(label: string, color: string, vh: number, fraction: number): HTMLElement {
+function createGuide(label: string, color: string, _vh: number, fraction: number): HTMLElement {
   const el = document.createElement("div");
   el.style.cssText = `
     position: fixed; left: 0; right: 0; height: 0;

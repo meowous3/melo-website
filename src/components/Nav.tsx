@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { MeloIcon, GitHubIcon } from "./icons";
-import { useScrollRevealStyle } from "../ScrollRevealContext";
+// import { useScrollRevealStyle } from "../ScrollRevealContext";
 // import { animationStyles } from "../useScrollReveal";
 
 const GITHUB_URL = "https://github.com/meowous3/melo";
