@@ -38,7 +38,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ github.event.deployment.payload.web_url || format('https://{0}.github.io/melo/', github.repository_owner) }}
+      url: ${{ github.event.deployment.payload.web_url || format('https://{0}.github.io/melo-website/', github.repository_owner) }}
     runs-on: ubuntu-latest
     needs: build
     steps:
