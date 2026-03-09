@@ -17,7 +17,7 @@ export function Hero() {
         </ScrollReveal>
         <ScrollReveal>
           <p className="hero__tagline">
-            A customizable desktop music player.
+            Youtube integrated desktop music player.
           </p>
         </ScrollReveal>
         <ScrollReveal>
@@ -26,6 +26,15 @@ export function Hero() {
               e.preventDefault();
               document.querySelector("#download")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}>Download</a>
+            <a href="#demo" className="btn btn-outline" onClick={(e) => {
+              e.preventDefault();
+              const el = document.querySelector("#demo");
+              if (el) {
+                const rect = el.getBoundingClientRect();
+                const top = rect.top + window.scrollY - (window.innerHeight - rect.height) / 2;
+                window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+              }
+            }}>Try Demo</a>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
               View on GitHub
             </a>

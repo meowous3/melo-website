@@ -4,27 +4,27 @@ const features = [
   {
     icon: "play",
     title: "Play Anything",
-    desc: "Search and play any song, album, or playlist from YouTube Music. Queue management, autoplay, and shuffle built in.",
+    desc: "Search and play any song, album, or playlist from YouTube. Queue management, autoplay, and shuffle built in.",
   },
   {
     icon: "download",
     title: "Offline Library",
-    desc: "Download tracks for offline playback. Your music, stored locally with automatic metadata and album art.",
-  },
-  {
-    icon: "palette",
-    title: "19 Themes",
-    desc: "From dark glass to CRT phosphor. Every color, font, background, and effect is customizable. Create your own.",
-  },
-  {
-    icon: "equalizer",
-    title: "Equalizer & Visualizer",
-    desc: "10-band EQ with presets and a full Milkdrop visualizer with thousands of presets.",
+    desc: "Download tracks for offline playback. Your music, stored locally and always available.",
   },
   {
     icon: "feed",
     title: "Your Feed",
-    desc: "Get personalized recommendations, playlists, and mixes tailored to your listening taste.",
+    desc: "Get personalized recommendations, playlists, and mixes tailored to your listening taste and mood.",
+  },
+  {
+    icon: "palette",
+    title: "Endless Personalization",
+    desc: "Every color, font, background, and effect is customizable. Download a community theme or create own theme.",
+  },
+  {
+    icon: "equalizer",
+    title: "Sound Control",
+    desc: "10-band EQ with presets, seamless crossfading between tracks, and automatic silence trimming.",
   },
   {
     icon: "lock",
@@ -35,6 +35,11 @@ const features = [
     icon: "platform",
     title: "Cross-Platform",
     desc: "Available for Linux, Windows, and macOS. Built with Electron and React for native performance.",
+  },
+  {
+    icon: "metadata",
+    title: "Metadata Fetching",
+    desc: "Automatically fetches titles, artists, album art, and duration. Your library stays organized without any manual effort.",
   },
 ];
 
@@ -81,6 +86,14 @@ function FeatureIcon({ icon }: { icon: string }) {
         <path d="M8 20h8M12 16v4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </>
     ),
+    metadata: (
+      <>
+        <path d="M4 7a2 2 0 012-2h8l6 6v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"
+          fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M14 5v6h6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M8 14h8M8 17h5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </>
+    ),
   };
 
   return (
@@ -96,7 +109,7 @@ export function Features() {
       <div className="container">
         <ScrollReveal>
           <h2 className="section-title">Everything you need</h2>
-          <p className="section-subtitle">A real music player, not a wrapper around a website.</p>
+          <p className="section-subtitle">Fully featured music player with audio only Youtube streaming.</p>
         </ScrollReveal>
         <div className="features__grid">
           {features.map((f) => (

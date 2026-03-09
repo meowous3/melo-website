@@ -34,4 +34,5 @@ export interface DemoSettings {
   background?: BackgroundConfig;
   glyphPreset: string;
   buttonShape: "sharp" | "rounded" | "pill";
+  profile?: string;
 }

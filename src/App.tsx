@@ -23,9 +23,11 @@ function useMediaQuery(query: string): boolean {
 
 export function App() {
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
-  const [theme, setTheme] = useState<LandingTheme>(() =>
-    prefersDark ? darkThemes[0] : lightThemes[0]
-  );
+  const [theme, setTheme] = useState<LandingTheme>(() => {
+    const t = prefersDark ? darkThemes[0] : lightThemes[0];
+    applyTheme(t);
+    return t;
+  });
   const [demoActive, setDemoActive] = useState(false);
 
   useEffect(() => {

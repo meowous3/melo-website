@@ -62,11 +62,32 @@ export function themeColors(accent: string, count: number): string[] {
   return base;
 }
 
+/** Hardcoded demo defaults per background type (options + opacity/blur). */
+const DEMO_BG_DEFAULTS: Record<string, { options: Record<string, number | string | boolean>; opacity: number; blur: number; colorCount: number }> = {
+  bokeh:  { options: { count: 15, speed: 0.3, sizeRange: 140 }, opacity: 1, blur: 2, colorCount: 4 },
+  waves:  { options: { layers: 4, speed: 0.4, amplitude: 100, position: 0.8 }, opacity: 0.8, blur: 4, colorCount: 3 },
+  mesh:   { options: { speed: 0.1, blobSize: 0.6 }, opacity: 0.4, blur: 0, colorCount: 5 },
+};
+
 /** Build default options for a procedural bg type using theme-derived colours. */
 export function defaultBgOptions(
   type: string,
   accent: string,
 ): Record<string, number | string | boolean> {
+  const demo = DEMO_BG_DEFAULTS[type];
+  if (demo) {
+    const opts = { ...demo.options };
+    // Inject theme-derived colours
+    const entry = PROCEDURAL_REGISTRY[type];
+    if (entry) {
+      for (const [key, def] of Object.entries(entry.optionDefs)) {
+        if (def.type === "colors" || def.type === "color") {
+          opts[key] = themeColors(accent, demo.colorCount).join(",");
+        }
+      }
+    }
+    return opts;
+  }
   const entry = PROCEDURAL_REGISTRY[type];
   if (!entry) return {};
   const opts: Record<string, number | string | boolean> = {};
@@ -79,6 +100,12 @@ export function defaultBgOptions(
     }
   }
   return opts;
+}
+
+/** Get the default opacity + blur for a bg type. */
+export function defaultBgConfig(type: string): { opacity: number; blur: number } {
+  const demo = DEMO_BG_DEFAULTS[type];
+  return demo ? { opacity: demo.opacity, blur: demo.blur } : { opacity: 1, blur: 0 };
 }
 
 /** Rewrite only the colour options in an existing bg options object. */

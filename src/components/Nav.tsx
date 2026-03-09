@@ -33,7 +33,8 @@ export function Nav({ demoActive }: { demoActive?: boolean }) {
     const el = document.querySelector(href);
     if (el) {
       const rect = el.getBoundingClientRect();
-      const top = rect.top + window.scrollY - (window.innerHeight - rect.height) / 2;
+      const offset = href === "#download" ? 40 : 0;
+      const top = rect.top + window.scrollY - (window.innerHeight - rect.height) / 2 + offset;
       window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     }
   }, []);

@@ -46,11 +46,8 @@ export default function HomeBrowser({
 }) {
   const [sections] = useState<HomeSection[]>([]);
   const [recommended, setRecommended] = useState<SearchResult[]>([]);
-  const [chips] = useState<ChipItem[]>([]);
-  const [activeChipToken] = useState<string | null>(null);
   const [loadingMixes, setLoadingMixes] = useState(true);
   const [loadingRecs, setLoadingRecs] = useState(true);
-  const [loadingChip] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAll = useCallback(() => {
@@ -234,45 +231,20 @@ export default function HomeBrowser({
   return (
     <div className="home-browser">
       <div className="home-toolbar-row">
-        {chips.length > 0 ? (
-          <div className="chip-bar" ref={chipBarRef} onMouseDown={onChipBarMouseDown}>
-            {chips.map((chip) => {
-              const isActive = activeChipToken === null
-                ? chip.isSelected
-                : chip.token === activeChipToken;
-              return (
-                <button
-                  key={chip.token || chip.text}
-                  className={`chip${isActive ? " active" : ""}`}
-                  disabled={loadingChip}
-                >
-                  {chip.text}
-                </button>
-              );
-            })}
-            <button className="chip home-refresh-chip" onClick={fetchAll} disabled={refreshing}>
-              {refreshing ? "..." : <Icon name="refresh" size={14} />}
-            </button>
-          </div>
-        ) : (
-          <div style={{ flex: 1 }} />
-        )}
+        <div className="chip-bar" ref={chipBarRef} onMouseDown={onChipBarMouseDown}>
+          <button className="chip home-refresh-chip" onClick={fetchAll} disabled={refreshing}>
+            {refreshing ? "..." : <Icon name="refresh" size={14} />}
+          </button>
+        </div>
         <div className="home-layout-toggle">
-          {chips.length === 0 && (
-            <button className="chip home-refresh-chip" onClick={fetchAll} disabled={refreshing}>
-              {refreshing ? "..." : <Icon name="refresh" size={14} />}
-            </button>
-          )}
           <LayoutToggle layout={layout} onChange={onChangeLayout} />
         </div>
       </div>
 
       {error && <div className="home-error">{error}</div>}
 
-      {loadingChip && <div className="home-loading">Filtering...</div>}
-
       {/* Recommended videos */}
-      {!loadingChip && recommended.length > 0 && (
+      {recommended.length > 0 && (
         <div className="home-section">
           {layout === "grid" ? renderRecommendedGrid() : renderRecommendedList(layout === "compact")}
         </div>

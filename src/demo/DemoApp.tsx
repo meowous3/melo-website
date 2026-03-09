@@ -46,11 +46,13 @@ export default function DemoApp({
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(true);
   const [miniPlayer, setMiniPlayer] = useState(false);
+  const [minimized, setMinimized] = useState(false);
+  const [maximized, setMaximized] = useState(false);
   const [showSearch, setShowSearch] = useState(true);
   const [layout, setLayout] = useState<"list" | "grid" | "compact">("grid");
 
   const [settings, setSettings] = useState<DemoSettings>({
-    bgOpacity: 0.5,
+    bgOpacity: 0.75,
     glyphPreset: "default",
     buttonShape: "rounded",
   });
@@ -71,8 +73,8 @@ export default function DemoApp({
     onThemeChange(theme as LandingTheme);
   }, [onThemeChange]);
 
-  // Apply theme on change
-  useEffect(() => {
+  // Apply theme on change (layout effect to avoid flash)
+  useLayoutEffect(() => {
     const root = demoRef.current;
     if (!root) return;
     applyThemePalette(currentTheme.palette, root);
@@ -339,12 +341,13 @@ export default function DemoApp({
   }, []);
 
   const handleDragMouseDown = useCallback((e: React.MouseEvent) => {
+    if (minimized) return;
     const target = e.target as HTMLElement;
     if (target.closest("button, input, .player-progress, .player-queue-btn, .player-resize-zone")) return;
     if (e.button !== 0) return;
     e.preventDefault();
     dragRef.current = { startX: e.clientX, startY: e.clientY, left: windowPos.left, top: windowPos.top };
-  }, [windowPos]);
+  }, [windowPos, minimized]);
 
   const handleSettingsDragMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -356,10 +359,11 @@ export default function DemoApp({
   }, [settingsPos, windowPos, windowSize]);
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    if (minimized) return;
     e.preventDefault();
     e.stopPropagation();
     resizeRef.current = { startX: e.clientX, startY: e.clientY, w: windowSize.width, h: windowSize.height };
-  }, [windowSize]);
+  }, [windowSize, minimized]);
 
   const handleToggleSettings = useCallback(() => {
     if (!showSettings) {
@@ -368,38 +372,91 @@ export default function DemoApp({
     setShowSettings(s => !s);
   }, [showSettings, windowPos, windowSize]);
 
-  const preMiniTop = useRef<number | null>(null);
+  const preMinimizeState = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
+  const preMaximizeState = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
   const playerZoneRef = useRef<HTMLDivElement>(null);
+  const wasMaximized = useRef(false);
+
+  const handleMinimize = useCallback(() => {
+    if (!miniPlayer) {
+      preMinimizeState.current = { ...windowPos, ...windowSize };
+      wasMaximized.current = maximized;
+      setMiniPlayer(true);
+      setMinimized(true);
+      setMaximized(false);
+      setWindowPos({ left: 20, top: window.innerHeight - 100 });
+      setWindowSize(s => ({ ...s, width: 360 }));
+    }
+  }, [windowPos, windowSize, miniPlayer, maximized]);
+
+  const handleRestore = useCallback(() => {
+    if (wasMaximized.current) {
+      // Restore to maximized state — preMaximizeState already has the original normal size
+      const navHeight = document.querySelector(".nav")?.getBoundingClientRect().height ?? 0;
+      setWindowPos({ left: 0, top: navHeight });
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight - navHeight });
+      setMaximized(true);
+    } else if (preMinimizeState.current) {
+      setWindowPos({ left: preMinimizeState.current.left, top: preMinimizeState.current.top });
+      setWindowSize({ width: preMinimizeState.current.width, height: preMinimizeState.current.height });
+    }
+    preMinimizeState.current = null;
+    wasMaximized.current = false;
+    setMiniPlayer(false);
+    setMinimized(false);
+  }, []);
+
+  const handleMaximize = useCallback(() => {
+    if (miniPlayer) return;
+    if (!maximized) {
+      preMaximizeState.current = { ...windowPos, ...windowSize };
+      const navHeight = document.querySelector(".nav")?.getBoundingClientRect().height ?? 0;
+      setWindowPos({ left: 0, top: navHeight });
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight - navHeight });
+      setMaximized(true);
+    } else {
+      if (preMaximizeState.current) {
+        setWindowPos({ left: preMaximizeState.current.left, top: preMaximizeState.current.top });
+        setWindowSize({ width: preMaximizeState.current.width, height: preMaximizeState.current.height });
+      }
+      setMaximized(false);
+    }
+  }, [miniPlayer, maximized, windowPos, windowSize]);
 
   const handlePlayerDoubleClick = useCallback(() => {
+    if (minimized) {
+      handleRestore();
+      return;
+    }
     setMiniPlayer(prev => {
       if (!prev) {
-        // Collapsing: keep player bar in same screen position
-        // Measure where the player zone currently is on screen
+        // Collapsing to mini via double-click (not minimized, stays free)
+        preMinimizeState.current = { ...windowPos, ...windowSize };
         const playerRect = playerZoneRef.current?.getBoundingClientRect();
         if (playerRect) {
-          preMiniTop.current = windowPos.top;
-          // New top = player's current screen top (since wrapper is fixed at viewport origin)
           setWindowPos(p => ({ ...p, top: playerRect.top }));
         }
       } else {
-        // Expanding: keep player bar in same screen position
-        // Player is at top of mini window, needs to end up at bottom of full window
-        const playerRect = playerZoneRef.current?.getBoundingClientRect();
-        if (playerRect) {
-          const playerH = playerRect.height;
-          setWindowPos(p => ({ ...p, top: playerRect.top - (windowSize.height - playerH) }));
+        // Expanding from mini
+        if (preMinimizeState.current) {
+          setWindowPos({ left: preMinimizeState.current.left, top: preMinimizeState.current.top });
+          setWindowSize({ width: preMinimizeState.current.width, height: preMinimizeState.current.height });
+          preMinimizeState.current = null;
+        } else {
+          const playerRect = playerZoneRef.current?.getBoundingClientRect();
+          if (playerRect) {
+            const playerH = playerRect.height;
+            setWindowPos(p => ({ ...p, top: playerRect.top - (windowSize.height - playerH) }));
+          }
         }
-        preMiniTop.current = null;
       }
       return !prev;
     });
-  }, [windowPos.top]);
+  }, [windowPos, windowSize, minimized, handleRestore]);
 
   // Compute settings window position
-  const settingsTransform = settingsPos
-    ? `translate(${settingsPos.left}px, ${settingsPos.top}px)`
-    : `translate(${windowPos.left + windowSize.width + 12}px, ${windowPos.top}px)`;
+  const settingsLeft = settingsPos ? settingsPos.left : windowPos.left + windowSize.width + 12;
+  const settingsTop = settingsPos ? settingsPos.top : windowPos.top;
 
   const hasQueue = queue.length > 1;
 
@@ -407,16 +464,17 @@ export default function DemoApp({
     <GlyphProvider value={glyphs}>
       <div ref={demoRef} className="demo-wrapper">
         <div
-          className="demo-window"
+          className={`demo-window${maximized ? " demo-window--maximized" : ""}`}
           style={{
             width: windowSize.width,
             height: miniPlayer ? undefined : windowSize.height,
-            transform: `translate(${windowPos.left}px, ${windowPos.top}px)`,
+            left: windowPos.left,
+            top: windowPos.top,
           }}
 
         >
           {settings.background && settings.background.type !== "none" && (
-            <BackgroundLayer config={settings.background} />
+            <BackgroundLayer key={settings.background.type} config={settings.background} />
           )}
 
           {!miniPlayer && (
@@ -431,8 +489,8 @@ export default function DemoApp({
                   >
                     <Icon name="search" size={14} />
                   </button>
-                  <button className="title-bar-btn" title="Minimize"><Icon name="minimize" size={12} /></button>
-                  <button className="title-bar-btn" title="Maximize"><Icon name="maximize" size={12} /></button>
+                  <button className="title-bar-btn" title="Minimize" onClick={handleMinimize}><Icon name="minimize" size={12} /></button>
+                  <button className="title-bar-btn" title={maximized ? "Restore" : "Maximize"} onClick={handleMaximize}><Icon name={maximized ? "restore" : "maximize"} size={12} /></button>
                   <button className="title-bar-btn title-bar-close" title="Close" onClick={() => onClose?.()}><Icon name="close" size={12} /></button>
                 </div>
               </div>
@@ -557,13 +615,24 @@ export default function DemoApp({
             />
           </div>
 
-          {!miniPlayer && <div className="demo-resize-handle" onMouseDown={handleResizeMouseDown} />}
+          <div className="demo-resize-handle" onMouseDown={handleResizeMouseDown} />
         </div>
+
+        {minimized && (
+          <button
+            className="mini-expand-btn"
+            style={{ left: windowPos.left + windowSize.width - 28, top: windowPos.top - 32 }}
+            onClick={handleRestore}
+            title="Expand"
+          >
+            <Icon name="maximize" size={14} />
+          </button>
+        )}
 
         {showSettings && (
           <div
             className="demo-settings-window"
-            style={{ transform: settingsTransform }}
+            style={{ left: settingsLeft, top: settingsTop }}
           >
             <SettingsApp
               settings={settings}

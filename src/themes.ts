@@ -163,8 +163,8 @@ const light: LandingTheme = {
   name: "Light",
   family: "light",
   palette: {
-    accent: "#cc3333",
-    accentHover: "#b82a2a",
+    accent: "#2870cc",
+    accentHover: "#1e5caa",
     textPrimary: "#1a1a1a",
     textSecondary: "#555555",
     textTertiary: "#888888",
@@ -203,8 +203,8 @@ const lightBlue: LandingTheme = {
 };
 
 export const darkThemes: LandingTheme[] = [
-  darkGlass,
   midnightBlue,
+  darkGlass,
   rose,
   charcoal,
   forest,

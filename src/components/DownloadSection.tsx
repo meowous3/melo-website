@@ -8,7 +8,7 @@ const platforms = [
     name: "Linux",
     icon: "linux",
     format: "AppImage",
-    desc: "Portable, no installation needed. Works on most distributions.",
+    desc: "Portable, no installation needed.",
   },
   {
     name: "Windows",
@@ -52,7 +52,7 @@ export function DownloadSection() {
       <div className="container">
         <ScrollReveal>
           <h2 className="section-title">Download melo</h2>
-          <p className="section-subtitle">Free and open source. Always.</p>
+          <p className="section-subtitle">Free and open source.</p>
         </ScrollReveal>
 
         <div className="download__grid">

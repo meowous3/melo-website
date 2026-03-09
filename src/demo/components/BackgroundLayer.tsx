@@ -28,6 +28,7 @@ export default function BackgroundLayer({ config }: { config: BackgroundConfig }
 
     const renderer = entry.create(opts);
     rendererRef.current = renderer;
+    let alive = true;
 
     const ctx = canvas.getContext("2d")!;
     let lastTime = 0;
@@ -50,15 +51,16 @@ export default function BackgroundLayer({ config }: { config: BackgroundConfig }
     let hidden = document.hidden;
     const onVisibility = () => {
       hidden = document.hidden;
-      if (!hidden) {
-        lastTime = 0; // reset dt so we don't get a huge jump
+      if (!hidden && alive) {
+        cancelAnimationFrame(rafRef.current);
+        lastTime = 0;
         rafRef.current = requestAnimationFrame(animate);
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     const animate = (time: number) => {
-      if (hidden) return; // stop loop when tab is hidden
+      if (!alive || hidden) return;
       const dt = lastTime ? Math.min((time - lastTime) / 1000, 0.1) : 0.016;
       lastTime = time;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -68,6 +70,7 @@ export default function BackgroundLayer({ config }: { config: BackgroundConfig }
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
+      alive = false;
       cancelAnimationFrame(rafRef.current);
       document.removeEventListener("visibilitychange", onVisibility);
       ro.disconnect();
@@ -103,6 +106,7 @@ export default function BackgroundLayer({ config }: { config: BackgroundConfig }
     filter: config.blur > 0 ? `blur(${config.blur}px)` : undefined,
     mixBlendMode: (hasBlend ? config.blendMode : undefined) as React.CSSProperties["mixBlendMode"],
     overflow: "hidden",
+    animation: "bg-fade-in 400ms ease",
   };
   const innerOpacity = hasBlend ? config.opacity : undefined;
   const innerTransform = hasTransform
