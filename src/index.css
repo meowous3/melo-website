@@ -337,7 +337,10 @@ a:hover { color: var(--accent-hover); }
   gap: clamp(12px, 1.5vw, 24px);
 }
 
+.features__grid > * { display: flex; }
+
 .feature-card {
+  flex: 1;
   padding: clamp(12px, 1.2vw, 16px) clamp(14px, 1.5vw, 20px);
   transition: border-color 200ms;
 }
