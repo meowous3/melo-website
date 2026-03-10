@@ -19,7 +19,7 @@ const features = [
   {
     icon: "palette",
     title: "Endless Personalization",
-    desc: "Every color, font, background, and effect is customizable. Download a community theme or create own theme.",
+    desc: "Every color, font, background, and effect is customizable. Download a community theme or create own.",
   },
   {
     icon: "equalizer",

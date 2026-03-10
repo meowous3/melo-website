@@ -851,6 +851,7 @@ a:hover { color: var(--accent-hover); }
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: var(--accent, #cc3333);
   color: white;
+  font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;

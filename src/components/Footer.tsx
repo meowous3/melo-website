@@ -9,7 +9,7 @@ export function Footer() {
           <a href={`${GITHUB_URL}/releases`} target="_blank" rel="noopener noreferrer">Releases</a>
           <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noopener noreferrer">Issues</a>
         </div>
-        <p className="footer__credit">Built with Electron, React, and yt-dlp.</p>
+        <p className="footer__credit">© 2026 melo</p>
       </div>
     </footer>
   );
