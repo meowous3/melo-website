@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import LayoutToggle from "./LayoutToggle";
 import { Icon } from "../icons";
-import { getTrending } from "../api/pipedApi";
+import { getTrending } from "../api/invidiousApi";
 
 function formatDuration(seconds: number): string {
   if (!seconds) return "";

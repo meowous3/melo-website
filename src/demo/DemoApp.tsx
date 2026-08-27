@@ -9,7 +9,7 @@ import QueuePanel from "./components/QueuePanel";
 import BackgroundLayer from "./components/BackgroundLayer";
 import SettingsApp from "./SettingsApp";
 import useAudioEngine from "./hooks/useAudioEngine";
-import { search, getStream, getSuggestions } from "./api/pipedApi";
+import { search, getStream, getSuggestions } from "./api/invidiousApi";
 import { applyThemePalette, applyButtonShape } from "./theme";
 import { Icon, GlyphProvider, resolveGlyphs } from "./icons";
 import { recolorBgOptions } from "./bgDefaults";
